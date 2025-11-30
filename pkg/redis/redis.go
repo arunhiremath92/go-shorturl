@@ -11,27 +11,16 @@ type RedisStore struct {
 	client *redis.Client
 }
 
-type RedisStoreConfig struct {
-	Address   string
-	Passwd    string
-	DefaultDb int
-}
-
 // NewRedisStore initializes the connection
-func NewRedisStore(redisConfig RedisStoreConfig) *RedisStore {
-	client := redis.NewClient(&redis.Options{
-		Addr:     redisConfig.Address,   // e.g., "localhost:6379"
-		Password: redisConfig.Passwd,    // no password set
-		DB:       redisConfig.DefaultDb, // use default DB
-	})
-
+func NewRedisStore(opt *redis.Options) *RedisStore {
+	client := redis.NewClient(opt)
 	return &RedisStore{client: client}
 }
 
 func (r *RedisStore) GetObject(key string) (string, error) {
 	keyVal := r.client.Get(context.Background(), key)
 	if keyVal.Err() != nil {
-		return "", fmt.Errorf("object not found in the db")
+		return "", fmt.Errorf("object not found in the db %s", keyVal.Err().Error())
 	}
 	return keyVal.Result()
 }

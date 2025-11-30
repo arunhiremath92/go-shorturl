@@ -9,23 +9,35 @@ import (
 
 	"github.com/arunhiremath92/go-shorturl/internal/api"
 	"github.com/arunhiremath92/go-shorturl/internal/urlshortner"
-	"github.com/arunhiremath92/go-shorturl/pkg/redis"
+	store "github.com/arunhiremath92/go-shorturl/pkg/redis"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
 	loghandler := log.New(os.Stdout, "url-shortner:", log.Default().Flags())
 	addr := ":8000"
-
-	redisAddr := os.Getenv("REDIS_ADDRESS")
-	if redisAddr == "" {
-		redisAddr = "redis:6379" // For local development
+	var redisOpt *redis.Options
+	redisUrl := os.Getenv("REDIS_URL")
+	if redisUrl == "" {
+		loghandler.Println("using local redis instance")
+		redisOpt = &redis.Options{
+			Addr: "redis:6379",
+			DB:   0,
+		}
 	}
-	redisConfig := redis.RedisStoreConfig{
-		Address:   redisAddr,
-		DefaultDb: 0,
+
+	if redisUrl != "" {
+		loghandler.Println("using remote redis")
+		var err error
+		redisOpt, err = redis.ParseURL(redisUrl)
+		if err != nil {
+			loghandler.Printf("failed to set up redis connection %s", err)
+			os.Exit(-1)
+		}
+
 	}
 
-	redisStore := redis.NewRedisStore(redisConfig)
+	redisStore := store.NewRedisStore(redisOpt)
 	urlShortenerSvc := urlshortner.NewUrlShortner(redisStore)
 
 	app := api.NewApp(api.AppConfig{Addr: addr, Logger: loghandler,

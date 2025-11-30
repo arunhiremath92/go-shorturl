@@ -8,7 +8,7 @@ services:
     command: redis-server
 
   app:
-    image: arunhiremath92/urlshortener:v0.1
+    image: arunhiremath92/urlshortener:v0.2
     ports:
       - "8000:8000"
     depends_on:
